@@ -1,5 +1,8 @@
 #include "Window.hpp"
 #include <iostream>
+#include <imgui.h>
+#include <imgui_impl_sdl2.h>
+#include <imgui_impl_sdlrenderer2.h>
 
 Window::Window(const std::string& title, int width, int height)
     : m_title(title), m_width(width), m_height(height),
@@ -7,8 +10,13 @@ Window::Window(const std::string& title, int width, int height)
 }
 
 Window::~Window() {
+    ImGui_ImplSDLRenderer2_Shutdown();
+    ImGui_ImplSDL2_Shutdown();
+    ImGui::DestroyContext();
+
     if (m_renderer) SDL_DestroyRenderer(m_renderer);
     if (m_window) SDL_DestroyWindow(m_window);
+
     SDL_Quit();
 }
 
@@ -37,12 +45,24 @@ bool Window::Init() {
     }
 
     m_isRunning = true;
+
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+
+    ImGui::StyleColorsDark();
+
+    ImGui_ImplSDL2_InitForSDLRenderer(m_window, m_renderer);
+    ImGui_ImplSDLRenderer2_Init(m_renderer);
+
     return true;
 }
 
 void Window::PollEvents() {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
+        ImGui_ImplSDL2_ProcessEvent(&event);
         if (event.type == SDL_QUIT) {
             m_isRunning = false;
         }
@@ -52,6 +72,17 @@ void Window::PollEvents() {
 void Window::Clear() {
     SDL_SetRenderDrawColor(m_renderer, 30, 30, 30, 255);
     SDL_RenderClear(m_renderer);
+}
+
+void Window::ImGuiStartFrame() {
+    ImGui_ImplSDLRenderer2_NewFrame();
+    ImGui_ImplSDL2_NewFrame();
+    ImGui::NewFrame();
+}
+
+void Window::ImGuiRender() {
+    ImGui::Render();
+    ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), m_renderer);
 }
 
 void Window::Present() {

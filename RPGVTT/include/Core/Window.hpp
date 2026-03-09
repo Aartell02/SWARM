@@ -10,6 +10,8 @@ public:
 	bool Init();
 	void PollEvents();
 	void Clear();
+	void ImGuiStartFrame();
+	void ImGuiRender();
 	void Present();
 
 	inline bool IsRunning() const { return m_isRunning; }

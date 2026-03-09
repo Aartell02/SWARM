@@ -18,14 +18,45 @@ find_package (SDL2 CONFIG REQUIRED)
 find_package (glm CONFIG REQUIRED)
 find_package (entt CONFIG REQUIRED)
 find_package (imgui CONFIG REQUIRED)
+set(IMGUI_VERSION "v1.91.9") # Musi zgadzać się z wersją z vcpkg
+set(IMGUI_URL "https://raw.githubusercontent.com/ocornut/imgui/${IMGUI_VERSION}/backends")
 
-add_executable (RPGVTT "src/main.cpp" "src/Window.cpp")
+set(BACKEND_FILES
+    "imgui_impl_sdl2.h"
+    "imgui_impl_sdl2.cpp"
+    "imgui_impl_sdlrenderer2.h"
+    "imgui_impl_sdlrenderer2.cpp"
+)
 
-target_include_directories(RPGVTT PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+# Upewniamy się, że folder Thirdparty istnieje
+file(MAKE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/imgui")
 
-target_link_libraries(RPGVTT PRIVATE
-    $<TARGET_NAME:SDL2::SDL2main> $<TARGET_NAME:SDL2::SDL2>
+foreach(FILE IN LISTS BACKEND_FILES)
+    set(LOCAL_PATH "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/imgui/${FILE}")
+    
+    # Pobieraj tylko wtedy, gdy pliku jeszcze nie ma na dysku
+    if(NOT EXISTS "${LOCAL_PATH}")
+        message(STATUS "Pobieranie ${FILE} z repozytorium ImGui...")
+        file(DOWNLOAD "${IMGUI_URL}/${FILE}" "${LOCAL_PATH}" SHOW_PROGRESS)
+    endif()
+endforeach()
+
+add_executable (${CMAKE_PROJECT_NAME} 
+    "src/Core/main.cpp" 
+    "src/Core/Window.cpp"
+    "thirdparty/imgui/imgui_impl_sdlrenderer2.cpp"
+    "thirdparty/imgui/imgui_impl_sdl2.cpp"
+)
+
+target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include/)
+target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include/Core/)
+target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include/Engine/)
+target_include_directories(${CMAKE_PROJECT_NAME}  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/imgui/)
+
+target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
+    $<TARGET_NAME:SDL2::SDL2main>
+    $<TARGET_NAME:SDL2::SDL2>
     glm::glm
     EnTT::EnTT
-    imgui::imgui
+    imgui::imgui 
 )
