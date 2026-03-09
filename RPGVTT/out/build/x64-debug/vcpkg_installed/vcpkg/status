@@ -30,6 +30,15 @@ Abi: d7ea030e6c40bcc18c0c05d1271de4063748f03b76f2f2f9a697cb60e5701a59
 Description: OpenGL Mathematics (GLM)
 Status: install ok installed
 
+Package: imgui
+Version: 1.91.9
+Depends: vcpkg-cmake, vcpkg-cmake-config
+Architecture: x64-windows
+Multi-Arch: same
+Abi: 51cd8eca6bc69b24a088edfbee31b56a15ee1dc0e77a476d67a759580b276941
+Description: Bloat-free Immediate Mode Graphical User interface for C++ with minimal dependencies.
+Status: install ok installed
+
 Package: sdl2
 Version: 2.32.10
 Depends: vcpkg-cmake, vcpkg-cmake-config

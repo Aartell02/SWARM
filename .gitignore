@@ -1,38 +1,66 @@
-# Prerequisites
-*.d
+# ==========================================
+# CMAKE & KATALOGI BUDOWANIA
+# ==========================================
+build/
+out/
+Out/
+bin/
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+cmake_install.cmake
+Makefile
 
-# Compiled Object files
+# ==========================================
+# VCPKG (Menedżer pakietów)
+# ==========================================
+# Ignorujemy pobrane i zbudowane lokalnie paczki
+vcpkg_installed/
+
+# ==========================================
+# VISUAL STUDIO & IDE
+# ==========================================
+.vs/
+*.user
+*.suo
+*.db
+*.sln.docstates
+.vscode/
+
+# ==========================================
+# PLIKI OBIEKTOWE I SKOMPILOWANE
+# ==========================================
 *.slo
 *.lo
 *.o
 *.obj
 
-# Precompiled Headers
+# ==========================================
+# PREKOMPILOWANE NAGŁÓWKI
+# ==========================================
 *.gch
 *.pch
 
-# Compiled Dynamic libraries
+# ==========================================
+# BIBLIOTEKI (Statyczne i Dynamiczne)
+# ==========================================
 *.so
 *.dylib
 *.dll
-
-# Fortran module files
-*.mod
-*.smod
-
-# Compiled Static libraries
 *.lai
 *.la
 *.a
 *.lib
 
-# Executables
+# ==========================================
+# PLIKI WYKONYWALNE
+# ==========================================
 *.exe
 *.out
 *.app
 
-# Visual Studio cache directory
-.vs/
-
-# CMake Build
-.out/
+# ==========================================
+# INNE
+# ==========================================
+*.log
+*.tmp

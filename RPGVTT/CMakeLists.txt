@@ -17,6 +17,7 @@ set (CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package (SDL2 CONFIG REQUIRED)
 find_package (glm CONFIG REQUIRED)
 find_package (entt CONFIG REQUIRED)
+find_package (imgui CONFIG REQUIRED)
 
 add_executable (RPGVTT "src/main.cpp" "src/Window.cpp")
 
@@ -26,4 +27,5 @@ target_link_libraries(RPGVTT PRIVATE
     $<TARGET_NAME:SDL2::SDL2main> $<TARGET_NAME:SDL2::SDL2>
     glm::glm
     EnTT::EnTT
+    imgui::imgui
 )

@@ -1,11 +1,48 @@
 Detecting compiler hash for triplet x64-windows...
 Compiler found: C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe
-The following packages are already installed:
+The following packages will be built and installed:
     entt:x64-windows@3.16.0
     glm:x64-windows@1.0.3
+    imgui:x64-windows@1.91.9
     sdl2:x64-windows@2.32.10
   * vcpkg-cmake:x64-windows@2024-04-23
   * vcpkg-cmake-config:x64-windows@2024-05-23
+Additional packages (*) will be modified to complete this operation.
+Restored 5 package(s) from C:\Users\Artur\AppData\Local\vcpkg\archives in 737 ms. Use --debug to see more details.
+Installing 1/6 vcpkg-cmake-config:x64-windows@2024-05-23...
+vcpkg-cmake-config:x64-windows@2024-05-23 package ABI: 80b139a16db9586821822493e1e2c117ce59f6a4def1a9780e1db8b1651a6af3
+Elapsed time to handle vcpkg-cmake-config:x64-windows: 8.84 ms
+Installing 2/6 vcpkg-cmake:x64-windows@2024-04-23...
+vcpkg-cmake:x64-windows@2024-04-23 package ABI: 3bd510eceea8a3d0b3fbfceee813237350df6d1459b992833bbdf80b082a856f
+Elapsed time to handle vcpkg-cmake:x64-windows: 12.1 ms
+Installing 3/6 entt:x64-windows@3.16.0...
+entt:x64-windows@3.16.0 package ABI: 9f099aa843e59653336f7813460eb437245302f89e478473bd4fd68f5a46a1e7
+Elapsed time to handle entt:x64-windows: 63.5 ms
+Installing 4/6 glm:x64-windows@1.0.3...
+glm:x64-windows@1.0.3 package ABI: d7ea030e6c40bcc18c0c05d1271de4063748f03b76f2f2f9a697cb60e5701a59
+Elapsed time to handle glm:x64-windows: 347 ms
+Installing 5/6 imgui:x64-windows@1.91.9...
+imgui:x64-windows@1.91.9 package ABI: 51cd8eca6bc69b24a088edfbee31b56a15ee1dc0e77a476d67a759580b276941
+Building imgui:x64-windows@1.91.9...
+-- Note: imgui only supports static library linkage. Building static library.
+-- Using cached ocornut-imgui-v1.91.9.tar.gz
+-- Cleaning sources at C:/vcpkg/buildtrees/imgui/src/v1.91.9-afb09617a6.clean. Use --editable to skip cleaning for the packages you specify.
+-- Extracting source C:/vcpkg/downloads/ocornut-imgui-v1.91.9.tar.gz
+-- Using source at C:/vcpkg/buildtrees/imgui/src/v1.91.9-afb09617a6.clean
+-- Configuring x64-windows
+-- Building x64-windows-dbg
+-- Building x64-windows-rel
+-- Installing: C:/vcpkg/packages/imgui_x64-windows/share/imgui/copyright
+-- Performing post-build validation
+Starting submission of imgui:x64-windows@1.91.9 to 1 binary cache(s) in the background
+Elapsed time to handle imgui:x64-windows: 7.5 s
+Installing 6/6 sdl2:x64-windows@2.32.10...
+sdl2:x64-windows@2.32.10 package ABI: 617f7199effd2f55ffe1b5aef84fb1e689fc463f03f4a77b38a070a3f664cfa2
+Elapsed time to handle sdl2:x64-windows: 79.6 ms
+Installed contents are licensed to you by owners. Microsoft is not responsible for, nor does it grant any licenses to, third-party packages.
+Packages installed in this vcpkg installation declare the following licenses:
+MIT
+Zlib
 entt provides CMake targets:
 
     find_package(EnTT CONFIG REQUIRED)
@@ -20,6 +57,12 @@ The package glm provides CMake targets:
     find_package(glm CONFIG REQUIRED)
     target_link_libraries(main PRIVATE glm::glm-header-only)
 
+imgui provides CMake targets:
+
+  # this is heuristically generated, and may not be correct
+  find_package(imgui CONFIG REQUIRED)
+  target_link_libraries(main PRIVATE imgui::imgui)
+
 sdl2 provides CMake targets:
 
     find_package(SDL2 CONFIG REQUIRED)
@@ -29,4 +72,6 @@ sdl2 provides CMake targets:
         $<IF:$<TARGET_EXISTS:SDL2::SDL2>,SDL2::SDL2,SDL2::SDL2-static>
     )
 
-All requested installations completed successfully in: 829 us
+Waiting for 1 remaining binary cache submissions...
+Completed submission of imgui:x64-windows@1.91.9 to 1 binary cache(s) in 979 ms (1/1)
+All requested installations completed successfully in: 8 s
