@@ -2,15 +2,23 @@
 #include <imgui.h>
 #include <iostream>
 
+constexpr int WINDOW_WIDTH { 1280 };
+constexpr int WINDOW_HEIGHT { 720 };
+
+constexpr int GRID_SIZE { 32 };
+
+
+
+
 int main(int argc, char* argv[]) {
-    Window window("RPGVTT - Engine", 1280, 720);
+    Window window("RPGVTT - Engine", WINDOW_WIDTH, WINDOW_HEIGHT, GRID_SIZE);
 
     if (!window.Init()) {
-        std::cout << "Inicjalizacja okna ZAKONCZONA NIEPOWODZENIEM!" << std::endl;
+        std::cout << "Window initialization error!" << std::endl;
         return -1;
     }
 
-    std::cout << "Inicjalizacja okna SUKCES! Wchodzimy do petli gry." << std::endl;
+    std::cout << "Window initialization successful"<< std::endl;
 
     bool showDebugPanel = true;
 
@@ -18,6 +26,7 @@ int main(int argc, char* argv[]) {
         window.PollEvents();
         window.Clear();
 
+        window.DrawGrid();
         // --- UI Start ---
         window.ImGuiStartFrame();
 

@@ -5,7 +5,7 @@
 class Window 
 {
 public:
-	Window(const std::string& title, int width, int height);
+	Window(const std::string& title, int width, int height, int gridSize);
 	~Window();
 	bool Init();
 	void PollEvents();
@@ -13,6 +13,7 @@ public:
 	void ImGuiStartFrame();
 	void ImGuiRender();
 	void Present();
+	void DrawGrid();
 
 	inline bool IsRunning() const { return m_isRunning; }
 
@@ -20,6 +21,7 @@ private:
 	std::string m_title;
 	int m_width;
 	int m_height;
+	int m_gridSize;
 	bool m_isRunning;
 
 	SDL_Window* m_window;

@@ -4,8 +4,8 @@
 #include <imgui_impl_sdl2.h>
 #include <imgui_impl_sdlrenderer2.h>
 
-Window::Window(const std::string& title, int width, int height)
-    : m_title(title), m_width(width), m_height(height),
+Window::Window(const std::string& title, int width, int height, int gridSize)
+    : m_title(title), m_width(width), m_height(height), m_gridSize(gridSize),
     m_isRunning(false), m_window(nullptr), m_renderer(nullptr) {
 }
 
@@ -87,4 +87,14 @@ void Window::ImGuiRender() {
 
 void Window::Present() {
     SDL_RenderPresent(m_renderer);
+}
+
+void Window::DrawGrid()
+{
+    SDL_SetRenderDrawColor(m_renderer, 0xFF, 0xFF, 0xFF, 0xFF);
+    SDL_Rect rowLine{ .x = 0, .y = 0, .w = m_width , .h = 0 };
+    for (rowLine.y = 0; rowLine.y <= m_height; rowLine.y += m_gridSize)
+    {
+        SDL_RenderDrawRect(m_renderer, &rowLine);
+    }
 }

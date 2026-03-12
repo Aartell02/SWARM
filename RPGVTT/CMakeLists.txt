@@ -46,7 +46,7 @@ add_executable (${CMAKE_PROJECT_NAME}
     "src/Core/Window.cpp"
     "thirdparty/imgui/imgui_impl_sdlrenderer2.cpp"
     "thirdparty/imgui/imgui_impl_sdl2.cpp"
-)
+ )
 
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include/)
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include/Core/)
