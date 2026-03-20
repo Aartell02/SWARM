@@ -5,6 +5,7 @@
     "sdl2",
     "glm",
     "entt",
+    "glad",
     "imgui"
   ]
 }
