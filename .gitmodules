@@ -1,0 +1,3 @@
+[submodule "SWARM/vcpkg"]
+	path = SWARM/vcpkg
+	url = https://github.com/microsoft/vcpkg.git
