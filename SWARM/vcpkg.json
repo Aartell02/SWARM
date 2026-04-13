@@ -2,10 +2,14 @@
   "name": "swarm",
   "version": "0.1.0",
   "dependencies": [
-    "sdl2",
-    "glm",
-    "entt",
-    "glad",
-    "imgui"
+    "directx-headers",
+    "directxtk12",
+    "sdl3",
+    "imgui",
+    {
+      "name": "imgui",
+      "features": ["sdl3-binding", "dx12-binding"]
+    },
+    "entt"
   ]
 }
