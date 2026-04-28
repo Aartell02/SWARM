@@ -1,0 +1,327 @@
+#include "Renderer.hpp"
+#include <stdexcept>
+#include <SDL3/SDL.h>
+#include <string>
+#include <d3dcompiler.h>
+
+// Throws on HRESULT failure with the line number so you can find it fast
+#define CHECK(hr) if (FAILED(hr)) throw std::runtime_error("DX12 failed line " + std::to_string(__LINE__))
+
+void Renderer::Init(void* hwnd, uint32_t width, uint32_t height) {
+    m_viewportWidth = width;
+    m_viewportHeight = height;
+
+    CreateDevice();
+    CreateCommandQueue();
+    CreateSwapChain(hwnd, width, height);
+    CreateRTVHeap();
+    CreateFrameResources();
+    CreateCommandAllocatorAndList();
+    CreateFence();
+    CreatePipelineStateObject();
+    CreateConstantBuffer();
+
+    // Setup camera
+    XMVECTOR eyePosition = XMVectorSet(-10.0f, 10.0f, -6.0f, 1.0f);
+    XMVECTOR focusPosition = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
+    XMVECTOR upDirection = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+    m_viewMatrix = XMMatrixLookAtLH(eyePosition, focusPosition, upDirection);
+
+    float aspectRatio = static_cast<float>(width) / static_cast<float>(height);
+    m_projMatrix = XMMatrixPerspectiveFovLH(XM_PIDIV4, aspectRatio, 0.1f, 100.0f);
+}
+
+void Renderer::CreateDevice() {
+    CHECK(CreateDXGIFactory2(0, IID_PPV_ARGS(&m_factory)));
+
+    ComPtr<IDXGIAdapter1> adapter;
+    for (uint32_t i = 0; m_factory->EnumAdapterByGpuPreference(i, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(&adapter)) != DXGI_ERROR_NOT_FOUND; ++i)
+        if (SUCCEEDED(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_12_0, IID_PPV_ARGS(&m_device))))
+            break;
+
+    if (!m_device)
+        throw std::runtime_error("No DX12 capable GPU found");
+}
+
+void Renderer::CreateCommandQueue() {
+    D3D12_COMMAND_QUEUE_DESC desc{};
+    desc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+    desc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+    CHECK(m_device->CreateCommandQueue(&desc, IID_PPV_ARGS (&m_cmdQueue)));
+}
+
+void Renderer::CreateSwapChain(void* hwnd, uint32_t width, uint32_t height) {
+    DXGI_SWAP_CHAIN_DESC1 desc{};
+    desc.BufferCount = FRAME_COUNT;
+    desc.Width = width;
+    desc.Height = height;
+    desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+    desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+    desc.SampleDesc = { 1, 0 };
+
+    ComPtr<IDXGISwapChain1> sc;
+    CHECK(m_factory->CreateSwapChainForHwnd(
+        m_cmdQueue.Get(),
+        static_cast<HWND>(hwnd),
+        &desc, nullptr, nullptr, &sc));
+    CHECK(sc.As(&m_swapChain));
+    m_frameIndex = m_swapChain->GetCurrentBackBufferIndex();
+}
+
+void Renderer::CreateRTVHeap() {
+    D3D12_DESCRIPTOR_HEAP_DESC desc{};
+    desc.NumDescriptors = FRAME_COUNT;
+    desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+    CHECK(m_device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&m_rtvHeap)));
+    m_rtvDescSize = m_device->GetDescriptorHandleIncrementSize(
+        D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+}
+
+void Renderer::CreateFrameResources() {
+    D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle =
+        m_rtvHeap->GetCPUDescriptorHandleForHeapStart();
+
+    for (uint32_t i = 0; i < FRAME_COUNT; ++i) {
+        CHECK(m_swapChain->GetBuffer(i, IID_PPV_ARGS(&m_renderTargets[i])));
+        m_device->CreateRenderTargetView(
+            m_renderTargets[i].Get(), nullptr, rtvHandle);
+        rtvHandle.ptr += m_rtvDescSize;
+    }
+}
+
+void Renderer::CreateCommandAllocatorAndList() {
+    CHECK(m_device->CreateCommandAllocator(
+        D3D12_COMMAND_LIST_TYPE_DIRECT,
+        IID_PPV_ARGS(&m_cmdAllocator)));
+
+    CHECK(m_device->CreateCommandList(
+        0,
+        D3D12_COMMAND_LIST_TYPE_DIRECT,
+        m_cmdAllocator.Get(),
+        nullptr,                        // No PSO yet
+        IID_PPV_ARGS(&m_cmdList)));
+
+    CHECK(m_cmdList->Close());           // Close immediately; opened each frame
+}
+
+void Renderer::CreateFence() {
+    CHECK(m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE,
+        IID_PPV_ARGS(&m_fence)));
+    m_fenceValue = 1;
+    m_fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+    if (!m_fenceEvent) throw std::runtime_error("Failed to create fence event");
+}
+
+void Renderer::BeginRender() {
+    // --- Record commands ---
+    CHECK(m_cmdAllocator->Reset());
+    CHECK(m_cmdList->Reset(m_cmdAllocator.Get(), m_pipelineState.Get()));
+
+    // Transition: Present → Render Target
+    D3D12_RESOURCE_BARRIER barrier{};
+    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+    barrier.Transition.pResource = m_renderTargets[m_frameIndex].Get();
+    barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
+    barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+    barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+    m_cmdList->ResourceBarrier(1, &barrier);
+
+    // Clear to cornflower blue
+    D3D12_CPU_DESCRIPTOR_HANDLE rtv =
+        m_rtvHeap->GetCPUDescriptorHandleForHeapStart();
+    rtv.ptr += static_cast<size_t>(m_frameIndex) * m_rtvDescSize;
+
+    const float clearColor[] = { 0.39f, 0.58f, 0.58f, 1.0f };
+    m_cmdList->ClearRenderTargetView(rtv, clearColor, 0, nullptr);
+
+    // Set render target
+    m_cmdList->OMSetRenderTargets(1, &rtv, FALSE, nullptr);
+
+    // Set PSO and root signature
+    m_cmdList->SetPipelineState(m_pipelineState.Get());
+    m_cmdList->SetGraphicsRootSignature(m_rootSignature.Get());
+
+    // Set viewport
+    D3D12_VIEWPORT viewport{};
+    viewport.TopLeftX = 0;
+    viewport.TopLeftY = 0;
+    viewport.Width = static_cast<float>(m_viewportWidth);
+    viewport.Height = static_cast<float>(m_viewportHeight);
+    viewport.MinDepth = 0.0f;
+    viewport.MaxDepth = 1.0f;
+    m_cmdList->RSSetViewports(1, &viewport);
+
+    // Set scissor rect
+    D3D12_RECT scissorRect{};
+    scissorRect.left = 0;
+    scissorRect.top = 0;
+    scissorRect.right = static_cast<LONG>(m_viewportWidth);
+    scissorRect.bottom = static_cast<LONG>(m_viewportHeight);
+    m_cmdList->RSSetScissorRects(1, &scissorRect);
+}
+
+void Renderer::EndRender() {
+    // Transition: Render Target → Present
+    D3D12_RESOURCE_BARRIER barrier{};
+    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+    barrier.Transition.pResource = m_renderTargets[m_frameIndex].Get();
+    barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+    barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
+    barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+    m_cmdList->ResourceBarrier(1, &barrier);
+
+    CHECK(m_cmdList->Close());
+
+    // --- Execute ---
+    ID3D12CommandList* lists[] = { m_cmdList.Get() };
+    m_cmdQueue->ExecuteCommandLists(1, lists);
+
+    CHECK(m_swapChain->Present(1, 0));
+
+    WaitForGPU();
+    m_frameIndex = m_swapChain->GetCurrentBackBufferIndex();
+}
+
+void Renderer::WaitForGPU() {
+    const uint64_t value = m_fenceValue++;
+    CHECK(m_cmdQueue->Signal(m_fence.Get(), value));
+    if (m_fence->GetCompletedValue() < value) {
+        CHECK(m_fence->SetEventOnCompletion(value, m_fenceEvent));
+        WaitForSingleObject(m_fenceEvent, INFINITE);
+    }
+}
+
+void Renderer::CreatePipelineStateObject() {
+    // Compile vertex shader
+    ComPtr<ID3DBlob> vsBlob, psBlob, errorBlob;
+    HRESULT hr = D3DCompileFromFile(L"shaders/VertexShader.hlsl", nullptr, nullptr, "main", "vs_5_0", 0, 0, &vsBlob, &errorBlob);
+    if (FAILED(hr)) {
+        if (errorBlob) {
+            std::string errorMsg(static_cast<char*>(errorBlob->GetBufferPointer()), errorBlob->GetBufferSize());
+            throw std::runtime_error("Vertex shader compilation failed: " + errorMsg);
+        }
+        throw std::runtime_error("Vertex shader compilation failed or file not found");
+    }
+
+    hr = D3DCompileFromFile(L"shaders/PixelShader.hlsl", nullptr, nullptr, "main", "ps_5_0", 0, 0, &psBlob, &errorBlob);
+    if (FAILED(hr)) {
+        if (errorBlob) {
+            std::string errorMsg(static_cast<char*>(errorBlob->GetBufferPointer()), errorBlob->GetBufferSize());
+            throw std::runtime_error("Pixel shader compilation failed: " + errorMsg);
+        }
+        throw std::runtime_error("Pixel shader compilation failed or file not found");
+    }
+
+    // Define vertex input layout
+    D3D12_INPUT_ELEMENT_DESC inputLayout[] = {
+        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+    };
+
+    // Create root signature
+    D3D12_ROOT_PARAMETER rootParam{};
+    rootParam.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+    rootParam.Descriptor.ShaderRegister = 0;
+    rootParam.Descriptor.RegisterSpace = 0;
+    rootParam.ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+
+    D3D12_ROOT_SIGNATURE_DESC rootSigDesc{};
+    rootSigDesc.NumParameters = 1;
+    rootSigDesc.pParameters = &rootParam;
+    rootSigDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+
+    ComPtr<ID3DBlob> rootSigBlob;
+    CHECK(D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1, &rootSigBlob, nullptr));
+    CHECK(m_device->CreateRootSignature(0, rootSigBlob->GetBufferPointer(), rootSigBlob->GetBufferSize(), IID_PPV_ARGS(&m_rootSignature)));
+
+    // Create PSO
+    D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc{};
+    psoDesc.pRootSignature = m_rootSignature.Get();
+    psoDesc.VS = { vsBlob->GetBufferPointer(), vsBlob->GetBufferSize() };
+    psoDesc.PS = { psBlob->GetBufferPointer(), psBlob->GetBufferSize() };
+    psoDesc.BlendState.AlphaToCoverageEnable = FALSE;
+    psoDesc.BlendState.IndependentBlendEnable = FALSE;
+    psoDesc.BlendState.RenderTarget[0].BlendEnable = FALSE;
+    psoDesc.BlendState.RenderTarget[0].LogicOpEnable = FALSE;
+    psoDesc.BlendState.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+    psoDesc.SampleMask = UINT_MAX;
+    psoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
+    psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_BACK;
+    psoDesc.RasterizerState.FrontCounterClockwise = FALSE;
+    psoDesc.DepthStencilState.DepthEnable = TRUE;
+    psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+    psoDesc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+    psoDesc.DepthStencilState.StencilEnable = FALSE;
+    psoDesc.InputLayout = { inputLayout, _countof(inputLayout) };
+    psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+    psoDesc.NumRenderTargets = 1;
+    psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+    psoDesc.DSVFormat = DXGI_FORMAT_UNKNOWN;
+    psoDesc.SampleDesc = { 1, 0 };
+
+    CHECK(m_device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_pipelineState)));
+}
+
+void Renderer::CreateConstantBuffer() {
+    const UINT bufferSize = (sizeof(ConstantBuffer) + 255) & ~255; // Align to 256 bytes
+
+    D3D12_HEAP_PROPERTIES heapProps{};
+    heapProps.Type = D3D12_HEAP_TYPE_UPLOAD;
+
+    D3D12_RESOURCE_DESC resourceDesc{};
+    resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+    resourceDesc.Width = bufferSize;
+    resourceDesc.Height = 1;
+    resourceDesc.DepthOrArraySize = 1;
+    resourceDesc.MipLevels = 1;
+    resourceDesc.Format = DXGI_FORMAT_UNKNOWN;
+    resourceDesc.SampleDesc.Count = 1;
+    resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+
+    CHECK(m_device->CreateCommittedResource(
+        &heapProps, D3D12_HEAP_FLAG_NONE, &resourceDesc,
+        D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&m_constantBuffer)));
+
+    D3D12_RANGE readRange{ 0, 0 };
+    CHECK(m_constantBuffer->Map(0, &readRange, reinterpret_cast<void**>(&m_pConstantBufferData)));
+}
+
+void Renderer::RenderMesh(const Mesh& mesh, const Transform& transform, UINT objectIndex) {
+    // Update constant buffer
+    XMMATRIX world = transform.GetWorldMatrix();
+    XMMATRIX worldViewProj = XMMatrixTranspose(world * m_viewMatrix * m_projMatrix);
+
+    // Write into the correct slot
+    constexpr UINT alignedSize = (sizeof(ConstantBuffer) + 255) & ~255;
+    auto* slot = reinterpret_cast<ConstantBuffer*>(
+        reinterpret_cast<uint8_t*>(m_pConstantBufferData) + objectIndex * alignedSize
+        );
+    slot->worldViewProj = worldViewProj;
+
+    // Offset the GPU address to match
+    D3D12_GPU_VIRTUAL_ADDRESS cbAddress = m_constantBuffer->GetGPUVirtualAddress() + objectIndex * alignedSize;
+
+    // Set constant buffer
+    m_cmdList->SetGraphicsRootConstantBufferView(0, cbAddress);
+
+    // Set vertex and index buffers
+    D3D12_VERTEX_BUFFER_VIEW vbView = mesh.GetVertexBufferView();
+    D3D12_INDEX_BUFFER_VIEW ibView = mesh.GetIndexBufferView();
+    m_cmdList->IASetVertexBuffers(0, 1, &vbView);
+    m_cmdList->IASetIndexBuffer(&ibView);
+    m_cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+    // Draw
+    m_cmdList->DrawIndexedInstanced(mesh.GetIndexCount(), 1, 0, 0, 0);
+}
+
+void Renderer::Shutdown() {
+    WaitForGPU();
+    if (m_pConstantBufferData) {
+        m_constantBuffer->Unmap(0, nullptr);
+        m_pConstantBufferData = nullptr;
+    }
+    if (m_fenceEvent) CloseHandle(m_fenceEvent);
+}

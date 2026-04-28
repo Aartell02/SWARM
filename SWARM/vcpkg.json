@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "dependencies": [
     "directx-headers",
+    "d3d12-memory-allocator",
     "directxtk12",
     "sdl3",
     "imgui",

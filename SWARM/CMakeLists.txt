@@ -1,5 +1,7 @@
 ﻿cmake_minimum_required (VERSION 3.20)
 
+include(CTest)
+set (BUILD_TESTING OFF)
 set (CMAKE_CXX_STANDARD 20)
 set (CMAKE_CXX_STANDARD_REQUIRED ON)
 set (VCPKG_BUILD_TESTS OFF CACHE BOOL "" FORCE)
@@ -17,18 +19,20 @@ find_package (entt CONFIG REQUIRED)
 
 # --- EXECUTABLES ---
 add_executable (${CMAKE_PROJECT_NAME}
-    "src/Core/main.cpp"
+    "src/main.cpp"
+    "src/Renderer.cpp"
+    "src/Mesh.cpp"
+    "src/Input.cpp"
 )
  
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE 
     ${CMAKE_CURRENT_SOURCE_DIR}/include/
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/Core/
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/Engine/
 )
 
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
     # DirectX
     Microsoft::DirectX-Headers
+    Microsoft::DirectX-Guids
     Microsoft::DirectXTK12
     d3d12.lib
     dxgi.lib
@@ -43,4 +47,12 @@ target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
 
     # EnTT
     EnTT::EnTT
+)
+
+# Copy shader files to build directory
+add_custom_command(TARGET ${CMAKE_PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    "${CMAKE_CURRENT_SOURCE_DIR}/shaders"
+    "$<TARGET_FILE_DIR:${CMAKE_PROJECT_NAME}>/shaders"
+    COMMENT "Copying shader files to build directory"
 )
