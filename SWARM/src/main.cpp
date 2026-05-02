@@ -33,7 +33,7 @@ int main(int argc, char* argv[])
         constexpr UINT maxObjects = 3;
 
         // Create platform (large plane)
-        Mesh platformMesh = MeshFactory::CreatePlane(renderer.GetDevice(), 50.0f, 50.0f, 
+        Mesh platformMesh = MeshFactory::CreatePlane(renderer.GetDevice(), 10.0f, 10.0f, 
             DirectX::XMFLOAT4(0.2f, 0.8f, 0.2f, 1.0f)); // Green
         Transform platformTransform;
         platformTransform.position = DirectX::XMFLOAT3(0.0f, -2.0f, 0.0f);

@@ -39,10 +39,10 @@ private:
 	void CreateConstantBuffer();
 	void WaitForGPU();
 
-	ComPtr<ID3D12Device>				m_device;
 	ComPtr<IDXGIFactory6>				m_factory;
-	ComPtr<IDXGISwapChain3>				m_swapChain;
+	ComPtr<ID3D12Device>				m_device;
 	ComPtr<ID3D12CommandQueue>			m_cmdQueue;
+	ComPtr<IDXGISwapChain3>				m_swapChain;
 	ComPtr<ID3D12DescriptorHeap>		m_rtvHeap;
 	ComPtr<ID3D12Resource>				m_renderTargets[FRAME_COUNT];
 	ComPtr<ID3D12CommandAllocator>		m_cmdAllocator;

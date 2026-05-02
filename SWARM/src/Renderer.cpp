@@ -22,7 +22,7 @@ void Renderer::Init(void* hwnd, uint32_t width, uint32_t height) {
     CreateConstantBuffer();
 
     // Setup camera
-    XMVECTOR eyePosition = XMVectorSet(-10.0f, 10.0f, -6.0f, 1.0f);
+    XMVECTOR eyePosition = XMVectorSet(0.0f, 10.0f, -10.0f, 1.0f);
     XMVECTOR focusPosition = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
     XMVECTOR upDirection = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
     m_viewMatrix = XMMatrixLookAtLH(eyePosition, focusPosition, upDirection);
@@ -44,38 +44,53 @@ void Renderer::CreateDevice() {
 }
 
 void Renderer::CreateCommandQueue() {
-    D3D12_COMMAND_QUEUE_DESC desc{};
-    desc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-    desc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+    D3D12_COMMAND_QUEUE_DESC desc{
+		.Type = D3D12_COMMAND_LIST_TYPE_DIRECT,
+		.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL,
+		.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE,
+		.NodeMask = 0
+    };
     CHECK(m_device->CreateCommandQueue(&desc, IID_PPV_ARGS (&m_cmdQueue)));
 }
 
 void Renderer::CreateSwapChain(void* hwnd, uint32_t width, uint32_t height) {
-    DXGI_SWAP_CHAIN_DESC1 desc{};
-    desc.BufferCount = FRAME_COUNT;
-    desc.Width = width;
-    desc.Height = height;
-    desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-    desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-    desc.SampleDesc = { 1, 0 };
+    DXGI_SWAP_CHAIN_DESC1 desc{
+        .Width = width,
+        .Height = height,
+        .Format = DXGI_FORMAT_R8G8B8A8_UNORM,
+        .Stereo = FALSE,
+        .SampleDesc = {
+            .Count = 1,
+            .Quality = 0
+        },
+        .BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT,
+        .BufferCount = FRAME_COUNT,
+        .Scaling = DXGI_SCALING_STRETCH,
+        .SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD,
+        .AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED,
+        .Flags = 0
+    };
+
 
     ComPtr<IDXGISwapChain1> sc;
     CHECK(m_factory->CreateSwapChainForHwnd(
         m_cmdQueue.Get(),
         static_cast<HWND>(hwnd),
-        &desc, nullptr, nullptr, &sc));
+        &desc,
+        nullptr,
+        nullptr,
+        &sc));
     CHECK(sc.As(&m_swapChain));
     m_frameIndex = m_swapChain->GetCurrentBackBufferIndex();
 }
 
 void Renderer::CreateRTVHeap() {
-    D3D12_DESCRIPTOR_HEAP_DESC desc{};
-    desc.NumDescriptors = FRAME_COUNT;
-    desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+    D3D12_DESCRIPTOR_HEAP_DESC desc{
+		.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV,
+		.NumDescriptors = FRAME_COUNT,
+    };
     CHECK(m_device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&m_rtvHeap)));
-    m_rtvDescSize = m_device->GetDescriptorHandleIncrementSize(
-        D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+    m_rtvDescSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 }
 
 void Renderer::CreateFrameResources() {
@@ -91,16 +106,9 @@ void Renderer::CreateFrameResources() {
 }
 
 void Renderer::CreateCommandAllocatorAndList() {
-    CHECK(m_device->CreateCommandAllocator(
-        D3D12_COMMAND_LIST_TYPE_DIRECT,
-        IID_PPV_ARGS(&m_cmdAllocator)));
+    CHECK(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_cmdAllocator)));
 
-    CHECK(m_device->CreateCommandList(
-        0,
-        D3D12_COMMAND_LIST_TYPE_DIRECT,
-        m_cmdAllocator.Get(),
-        nullptr,                        // No PSO yet
-        IID_PPV_ARGS(&m_cmdList)));
+    CHECK(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_cmdAllocator.Get(), nullptr, IID_PPV_ARGS(&m_cmdList)));
 
     CHECK(m_cmdList->Close());           // Close immediately; opened each frame
 }
@@ -108,7 +116,7 @@ void Renderer::CreateCommandAllocatorAndList() {
 void Renderer::CreateFence() {
     CHECK(m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE,
         IID_PPV_ARGS(&m_fence)));
-    m_fenceValue = 1;
+    m_fenceValue = 0;
     m_fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
     if (!m_fenceEvent) throw std::runtime_error("Failed to create fence event");
 }
@@ -119,20 +127,25 @@ void Renderer::BeginRender() {
     CHECK(m_cmdList->Reset(m_cmdAllocator.Get(), m_pipelineState.Get()));
 
     // Transition: Present → Render Target
-    D3D12_RESOURCE_BARRIER barrier{};
-    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-    barrier.Transition.pResource = m_renderTargets[m_frameIndex].Get();
-    barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
-    barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-    barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+    D3D12_RESOURCE_BARRIER barrier{
+		.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
+        .Transition = {
+            .pResource = m_renderTargets[m_frameIndex].Get(),
+            .StateBefore = D3D12_RESOURCE_STATE_PRESENT,
+            .StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET
+		}
+    };
+
+    //barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
     m_cmdList->ResourceBarrier(1, &barrier);
 
-    // Clear to cornflower blue
+    // Clear buffer
+    const float clearColor[] = { 0.39f, 0.58f, 0.58f, 1.0f };
+
     D3D12_CPU_DESCRIPTOR_HANDLE rtv =
         m_rtvHeap->GetCPUDescriptorHandleForHeapStart();
     rtv.ptr += static_cast<size_t>(m_frameIndex) * m_rtvDescSize;
 
-    const float clearColor[] = { 0.39f, 0.58f, 0.58f, 1.0f };
     m_cmdList->ClearRenderTargetView(rtv, clearColor, 0, nullptr);
 
     // Set render target
@@ -143,51 +156,56 @@ void Renderer::BeginRender() {
     m_cmdList->SetGraphicsRootSignature(m_rootSignature.Get());
 
     // Set viewport
-    D3D12_VIEWPORT viewport{};
-    viewport.TopLeftX = 0;
-    viewport.TopLeftY = 0;
-    viewport.Width = static_cast<float>(m_viewportWidth);
-    viewport.Height = static_cast<float>(m_viewportHeight);
-    viewport.MinDepth = 0.0f;
-    viewport.MaxDepth = 1.0f;
+    D3D12_VIEWPORT viewport{
+		.TopLeftX = 0,
+        .TopLeftY = 0,
+        .Width = static_cast<float>(m_viewportWidth),
+        .Height = static_cast<float>(m_viewportHeight),
+        .MinDepth = 0.0f,
+		.MaxDepth = 1.0f
+    };
     m_cmdList->RSSetViewports(1, &viewport);
 
     // Set scissor rect
-    D3D12_RECT scissorRect{};
-    scissorRect.left = 0;
-    scissorRect.top = 0;
-    scissorRect.right = static_cast<LONG>(m_viewportWidth);
-    scissorRect.bottom = static_cast<LONG>(m_viewportHeight);
+    D3D12_RECT scissorRect{
+		.left = 0,
+		.top = 0,
+		.right = static_cast<LONG>(m_viewportWidth),
+		.bottom = static_cast<LONG>(m_viewportHeight)
+    };
     m_cmdList->RSSetScissorRects(1, &scissorRect);
 }
 
 void Renderer::EndRender() {
     // Transition: Render Target → Present
-    D3D12_RESOURCE_BARRIER barrier{};
-    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-    barrier.Transition.pResource = m_renderTargets[m_frameIndex].Get();
-    barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
-    barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
-    barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+    D3D12_RESOURCE_BARRIER barrier{
+		.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
+        .Transition = {
+            .pResource = m_renderTargets[m_frameIndex].Get(),
+            .StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET,
+            .StateAfter = D3D12_RESOURCE_STATE_PRESENT
+		}
+    };
+    //barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
     m_cmdList->ResourceBarrier(1, &barrier);
 
     CHECK(m_cmdList->Close());
 
     // --- Execute ---
     ID3D12CommandList* lists[] = { m_cmdList.Get() };
-    m_cmdQueue->ExecuteCommandLists(1, lists);
+    m_cmdQueue->ExecuteCommandLists((UINT)std::size(lists), lists);
+
+    WaitForGPU();
 
     CHECK(m_swapChain->Present(1, 0));
 
-    WaitForGPU();
     m_frameIndex = m_swapChain->GetCurrentBackBufferIndex();
 }
 
 void Renderer::WaitForGPU() {
-    const uint64_t value = m_fenceValue++;
-    CHECK(m_cmdQueue->Signal(m_fence.Get(), value));
-    if (m_fence->GetCompletedValue() < value) {
-        CHECK(m_fence->SetEventOnCompletion(value, m_fenceEvent));
+    CHECK(m_cmdQueue->Signal(m_fence.Get(), ++m_fenceValue));
+    if (m_fence->GetCompletedValue() < m_fenceValue) {
+        CHECK(m_fence->SetEventOnCompletion(m_fenceValue, m_fenceEvent));
         WaitForSingleObject(m_fenceEvent, INFINITE);
     }
 }
@@ -204,7 +222,7 @@ void Renderer::CreatePipelineStateObject() {
         throw std::runtime_error("Vertex shader compilation failed or file not found");
     }
 
-    hr = D3DCompileFromFile(L"shaders/PixelShader.hlsl", nullptr, nullptr, "main", "ps_5_0", 0, 0, &psBlob, &errorBlob);
+    hr = D3DCompileFromFile(L"shaders/FragmentShader.hlsl", nullptr, nullptr, "main", "ps_5_0", 0, 0, &psBlob, &errorBlob);
     if (FAILED(hr)) {
         if (errorBlob) {
             std::string errorMsg(static_cast<char*>(errorBlob->GetBufferPointer()), errorBlob->GetBufferSize());
