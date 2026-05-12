@@ -45,7 +45,7 @@ int main(int argc, char* argv[])
         randomCube.AddComponent<MeshRenderer>(MeshFactory::CreateCube(renderer.GetDevice(), 1.0f, DirectX::XMFLOAT4(0.2f, 0.2f, 0.8f, 1.0f)));
 
         Entity player = scene.CreateEntity("Player");
-        player.AddComponent<Transform>().position = DirectX::XMFLOAT3(0.0f, 2.0f, 5.0f);
+        player.AddComponent<Transform>().position = DirectX::XMFLOAT3(0.0f, 0.0f, 5.0f);
         player.AddComponent<MeshRenderer>(MeshFactory::CreateCube(renderer.GetDevice(), 1.0f, DirectX::XMFLOAT4(1.0f, 0.2f, 0.2f, 1.0f)));
 		Camera camera;
 

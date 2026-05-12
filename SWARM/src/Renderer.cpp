@@ -91,11 +91,23 @@ void Renderer::CreateDSVHeap() {
         .NumDescriptors = 1,
     };
     CHECK(m_device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&m_dsvHeap)));
+}
+
+void Renderer::CreateFrameResources() {
+    D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle =
+        m_rtvHeap->GetCPUDescriptorHandleForHeapStart();
+
+    for (uint32_t i = 0; i < FRAME_COUNT; ++i) {
+        CHECK(m_swapChain->GetBuffer(i, IID_PPV_ARGS(&m_renderTargets[i])));
+        m_device->CreateRenderTargetView(
+            m_renderTargets[i].Get(), nullptr, rtvHandle);
+        rtvHandle.ptr += m_rtvDescSize;
+    }
 
     D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc{
-       .Format = DXGI_FORMAT_D32_FLOAT,
-       .ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D,
-       .Flags = D3D12_DSV_FLAG_NONE
+        .Format = DXGI_FORMAT_D32_FLOAT,
+        .ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D,
+        .Flags = D3D12_DSV_FLAG_NONE
     };
 
     D3D12_CLEAR_VALUE depthOptimizedClearValue{
@@ -128,18 +140,6 @@ void Renderer::CreateDSVHeap() {
         IID_PPV_ARGS(&m_depthStencil)));
 
     m_device->CreateDepthStencilView(m_depthStencil.Get(), &dsvDesc, m_dsvHeap->GetCPUDescriptorHandleForHeapStart());
-}
-
-void Renderer::CreateFrameResources() {
-    D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle =
-        m_rtvHeap->GetCPUDescriptorHandleForHeapStart();
-
-    for (uint32_t i = 0; i < FRAME_COUNT; ++i) {
-        CHECK(m_swapChain->GetBuffer(i, IID_PPV_ARGS(&m_renderTargets[i])));
-        m_device->CreateRenderTargetView(
-            m_renderTargets[i].Get(), nullptr, rtvHandle);
-        rtvHandle.ptr += m_rtvDescSize;
-    }
 }
 
 void Renderer::CreateCommandAllocatorAndList() {
@@ -185,10 +185,13 @@ void Renderer::BeginRender() {
         m_rtvHeap->GetCPUDescriptorHandleForHeapStart();
     rtv.ptr += static_cast<size_t>(m_frameIndex) * m_rtvDescSize;
 
+	// Clear render target and depth buffer
     m_cmdList->ClearRenderTargetView(rtv, clearColor, 0, nullptr);
+    m_cmdList->ClearDepthStencilView(m_dsvHeap->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
-    // Set render target
-    m_cmdList->OMSetRenderTargets(1, &rtv, FALSE, nullptr);
+	// Set render target and depth stencil
+    D3D12_CPU_DESCRIPTOR_HANDLE dsv = m_dsvHeap->GetCPUDescriptorHandleForHeapStart();
+    m_cmdList->OMSetRenderTargets(1, &rtv, FALSE, &dsv);
 
     // Set PSO and root signature
     m_cmdList->SetPipelineState(m_pipelineState.Get());
