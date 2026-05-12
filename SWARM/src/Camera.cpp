@@ -1,6 +1,8 @@
 #include "Camera.hpp"
 #include "Constants.hpp"
 
+using namespace DirectX;
+
 void Camera::Init(float aspectRatio){
 	m_aspectRatio = aspectRatio;
 }

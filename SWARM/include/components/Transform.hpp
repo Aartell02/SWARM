@@ -15,7 +15,6 @@ struct Transform {
 		DirectX::XMMATRIX T = DirectX::XMMatrixTranslationFromVector(pos);
 		DirectX::XMMATRIX R = DirectX::XMMatrixRotationRollPitchYawFromVector(rot);
 		DirectX::XMMATRIX S = DirectX::XMMatrixScalingFromVector(scl);
-
 		return S * R * T;
 	}
 };

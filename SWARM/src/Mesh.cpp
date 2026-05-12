@@ -1,6 +1,9 @@
 #include "Mesh.hpp"
 #include <stdexcept>
 
+using namespace DirectX;
+using Microsoft::WRL::ComPtr;
+
 void Mesh::CreateBuffers(ID3D12Device* device, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices) {
 	if (vertices.empty() || indices.empty()) {
 		throw std::runtime_error("Cannot create mesh with empty vertices or indices");

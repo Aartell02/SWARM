@@ -233,45 +233,60 @@ void Renderer::CreatePipelineStateObject() {
     };
 
     // Create root signature
-    D3D12_ROOT_PARAMETER rootParam{};
-    rootParam.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-    rootParam.Descriptor.ShaderRegister = 0;
-    rootParam.Descriptor.RegisterSpace = 0;
-    rootParam.ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+    D3D12_ROOT_PARAMETER rootParam{
+		.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV,
+        .Descriptor = {
+            .ShaderRegister = 0,
+            .RegisterSpace = 0
+        },
+		.ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX
+    };
 
-    D3D12_ROOT_SIGNATURE_DESC rootSigDesc{};
-    rootSigDesc.NumParameters = 1;
-    rootSigDesc.pParameters = &rootParam;
-    rootSigDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+    D3D12_ROOT_SIGNATURE_DESC rootSigDesc{
+        .NumParameters = 1,
+		.pParameters = &rootParam,
+		.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT
+    };
 
     ComPtr<ID3DBlob> rootSigBlob;
     CHECK(D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1, &rootSigBlob, nullptr));
     CHECK(m_device->CreateRootSignature(0, rootSigBlob->GetBufferPointer(), rootSigBlob->GetBufferSize(), IID_PPV_ARGS(&m_rootSignature)));
 
     // Create PSO
-    D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc{};
-    psoDesc.pRootSignature = m_rootSignature.Get();
-    psoDesc.VS = { vsBlob->GetBufferPointer(), vsBlob->GetBufferSize() };
-    psoDesc.PS = { psBlob->GetBufferPointer(), psBlob->GetBufferSize() };
-    psoDesc.BlendState.AlphaToCoverageEnable = FALSE;
-    psoDesc.BlendState.IndependentBlendEnable = FALSE;
-    psoDesc.BlendState.RenderTarget[0].BlendEnable = FALSE;
-    psoDesc.BlendState.RenderTarget[0].LogicOpEnable = FALSE;
-    psoDesc.BlendState.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
-    psoDesc.SampleMask = UINT_MAX;
-    psoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
-    psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_BACK;
-    psoDesc.RasterizerState.FrontCounterClockwise = FALSE;
-    psoDesc.DepthStencilState.DepthEnable = TRUE;
-    psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
-    psoDesc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
-    psoDesc.DepthStencilState.StencilEnable = FALSE;
-    psoDesc.InputLayout = { inputLayout, _countof(inputLayout) };
-    psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-    psoDesc.NumRenderTargets = 1;
-    psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
-    psoDesc.DSVFormat = DXGI_FORMAT_UNKNOWN;
-    psoDesc.SampleDesc = { 1, 0 };
+    D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc{
+		.pRootSignature = m_rootSignature.Get(),
+        .VS = { vsBlob->GetBufferPointer(), vsBlob->GetBufferSize() },
+        .PS = { psBlob->GetBufferPointer(), psBlob->GetBufferSize() },
+        .BlendState = {
+            .AlphaToCoverageEnable = FALSE,
+            .IndependentBlendEnable = FALSE,
+            .RenderTarget = {
+                {
+                    .BlendEnable = FALSE,
+                    .LogicOpEnable = FALSE,
+                    .RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL
+                }
+            }
+        },
+        .SampleMask = UINT_MAX,
+        .RasterizerState = {
+            .FillMode = D3D12_FILL_MODE_SOLID,
+            .CullMode = D3D12_CULL_MODE_BACK,
+            .FrontCounterClockwise = FALSE
+        },
+        .DepthStencilState = {
+            .DepthEnable = TRUE,
+            .DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL,
+            .DepthFunc = D3D12_COMPARISON_FUNC_LESS,
+            .StencilEnable = FALSE
+        },
+        .InputLayout = { inputLayout, _countof(inputLayout) },
+        .PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
+        .NumRenderTargets = 1,
+        .RTVFormats = { DXGI_FORMAT_R8G8B8A8_UNORM },
+        .DSVFormat = DXGI_FORMAT_UNKNOWN,
+		.SampleDesc = { 1, 0 }
+    };
 
     CHECK(m_device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_pipelineState)));
 }
@@ -282,15 +297,17 @@ void Renderer::CreateConstantBuffer() {
     D3D12_HEAP_PROPERTIES heapProps{};
     heapProps.Type = D3D12_HEAP_TYPE_UPLOAD;
 
-    D3D12_RESOURCE_DESC resourceDesc{};
-    resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-    resourceDesc.Width = bufferSize;
-    resourceDesc.Height = 1;
-    resourceDesc.DepthOrArraySize = 1;
-    resourceDesc.MipLevels = 1;
-    resourceDesc.Format = DXGI_FORMAT_UNKNOWN;
-    resourceDesc.SampleDesc.Count = 1;
-    resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+    D3D12_RESOURCE_DESC resourceDesc{
+		.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER,
+        .Width = bufferSize,
+        .Height = 1,
+        .DepthOrArraySize = 1,
+        .MipLevels = 1,
+        .Format = DXGI_FORMAT_UNKNOWN,
+        .SampleDesc = { 1, 0 },
+        .Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR,
+		.Flags = D3D12_RESOURCE_FLAG_NONE
+    };
 
     CHECK(m_device->CreateCommittedResource(
         &heapProps, D3D12_HEAP_FLAG_NONE, &resourceDesc,
@@ -300,7 +317,7 @@ void Renderer::CreateConstantBuffer() {
     CHECK(m_constantBuffer->Map(0, &readRange, reinterpret_cast<void**>(&m_pConstantBufferData)));
 }
 
-void Renderer::RenderMesh(const Mesh& mesh, const Transform& transform, UINT objectIndex) {
+void Renderer::RenderMesh(const Mesh& mesh, const Transform& transform) {
     // Update constant buffer
 
     XMMATRIX world = transform.GetWorldMatrix();
@@ -308,11 +325,11 @@ void Renderer::RenderMesh(const Mesh& mesh, const Transform& transform, UINT obj
 
     // Write into the correct slot
     constexpr UINT alignedSize = (sizeof(ConstantBuffer) + 255) & ~255;
-    auto* slot = reinterpret_cast<ConstantBuffer*>(reinterpret_cast<uint8_t*>(m_pConstantBufferData) + objectIndex * alignedSize);
+    auto* slot = reinterpret_cast<ConstantBuffer*>(reinterpret_cast<uint8_t*>(m_pConstantBufferData) + m_currentObjectIndex * alignedSize);
     slot->worldViewProj = worldViewProj;
 
     // Offset the GPU address to match
-    D3D12_GPU_VIRTUAL_ADDRESS cbAddress = m_constantBuffer->GetGPUVirtualAddress() + objectIndex * alignedSize;
+    D3D12_GPU_VIRTUAL_ADDRESS cbAddress = m_constantBuffer->GetGPUVirtualAddress() + m_currentObjectIndex * alignedSize;
 
     // Set constant buffer
     m_cmdList->SetGraphicsRootConstantBufferView(0, cbAddress);

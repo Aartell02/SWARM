@@ -1,6 +1,7 @@
 #pragma once
 #include <entt/entt.hpp>
 #include "components/Entity.hpp"
+#include "components/Tag.hpp"
 
 class Scene {
 public:

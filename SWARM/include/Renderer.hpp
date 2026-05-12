@@ -13,6 +13,8 @@ using namespace DirectX;
 
 static constexpr uint32_t FRAME_COUNT = 2; // Double buffering
 
+static constexpr uint32_t MAX_OBJECTS = 100; // Max number of objects we can render (for constant buffer sizing)
+
 struct ConstantBuffer {
 	XMMATRIX worldViewProj;
 };
@@ -21,7 +23,7 @@ class Renderer {
 public:
 	void Init(void* hwnd, uint32_t width, uint32_t height);
 	void BeginRender();
-	void RenderMesh(const Mesh& mesh, const Transform& transform, UINT objectIndex);
+	void RenderMesh(const Mesh& mesh, const Transform& transform);
 	void EndRender();
 	void Shutdown();
 
@@ -60,6 +62,7 @@ private:
 	uint32_t m_frameIndex = 0; // Which back buffer is current
 	uint32_t m_viewportWidth = 0;
 	uint32_t m_viewportHeight = 0;
+	uint32_t m_currentObjectIndex = 0; // For constant buffer indexing
 
 	Camera m_camera;
 };

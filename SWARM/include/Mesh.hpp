@@ -4,13 +4,10 @@
 #include <vector>
 #include <DirectXMath.h>
 
-using Microsoft::WRL::ComPtr;
-using namespace DirectX;
-
 struct Vertex {
-	XMFLOAT3 position;
-	XMFLOAT3 normal;
-	XMFLOAT4 color;
+	DirectX::XMFLOAT3 position;
+	DirectX::XMFLOAT3 normal;
+	DirectX::XMFLOAT4 color;
 };
 
 class Mesh {
@@ -28,8 +25,8 @@ public:
 	uint32_t GetIndexCount() const { return m_indexCount; }
 
 private:
-	ComPtr<ID3D12Resource> m_vertexBuffer;
-	ComPtr<ID3D12Resource> m_indexBuffer;
+	Microsoft::WRL::ComPtr<ID3D12Resource> m_vertexBuffer;
+	Microsoft::WRL::ComPtr<ID3D12Resource> m_indexBuffer;
 	D3D12_VERTEX_BUFFER_VIEW m_vertexBufferView{};
 	D3D12_INDEX_BUFFER_VIEW m_indexBufferView{};
 	uint32_t m_indexCount = 0;
@@ -37,6 +34,6 @@ private:
 
 // Helper functions to generate common meshes
 namespace MeshFactory {
-	Mesh CreateCube(ID3D12Device* device, float size, const XMFLOAT4& color);
-	Mesh CreatePlane(ID3D12Device* device, float width, float depth, const XMFLOAT4& color);
+	Mesh CreateCube(ID3D12Device* device, float size, const DirectX::XMFLOAT4& color);
+	Mesh CreatePlane(ID3D12Device* device, float width, float depth, const DirectX::XMFLOAT4& color);
 }

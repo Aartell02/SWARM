@@ -1,7 +1,7 @@
 ﻿#include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 #include "Renderer.hpp"
-#include "Mesh.hpp"
+#include "components/MeshRenderer.hpp"
 #include "components/Transform.hpp"
 #include "Input.hpp"
 #include <stdexcept>
@@ -39,25 +39,17 @@ int main(int argc, char* argv[])
         Scene scene;
 
         // Create platform (large plane)
-        Entity platformEntity = scene.CreateEntity("Platform");
-		platformEntity.AddComponent<Transform>().position = DirectX::XMFLOAT3(0.0f, -2.0f, 0.0f);
-        //platformEntity.AddComponent<Mesh>(MeshFactory::CreateCube());
+        Entity platform = scene.CreateEntity("Platform");
+        platform.AddComponent<Transform>().position = DirectX::XMFLOAT3(0.0f, -2.0f, 0.0f);
+        platform.AddComponent<MeshRenderer>(MeshFactory::CreatePlane(renderer.GetDevice(), 10.0f, 10.0f, DirectX::XMFLOAT4(0.2f, 0.8f, 0.2f, 1.0f)));
 
-        Mesh platformMesh = MeshFactory::CreatePlane(renderer.GetDevice(), 10.0f, 10.0f, 
-            DirectX::XMFLOAT4(0.2f, 0.8f, 0.2f, 1.0f)); // Green
-        Transform platformTransform;
-        platformTransform.position = DirectX::XMFLOAT3(0.0f, -2.0f, 0.0f);
+        Entity randomCube = scene.CreateEntity("RandomCube");
+        randomCube.AddComponent<Transform>().position = DirectX::XMFLOAT3(5.0f, 0.0f, 0.0f);
+        randomCube.AddComponent<MeshRenderer>(MeshFactory::CreateCube(renderer.GetDevice(), 1.0f, DirectX::XMFLOAT4(0.2f, 0.2f, 0.8f, 1.0f)));
 
-		Mesh randomCubeMesh = MeshFactory::CreateCube(renderer.GetDevice(), 1.0f,
-			DirectX::XMFLOAT4(0.2f, 0.2f, 0.8f, 1.0f)); // Blue
-        Transform randomTransform;
-        randomTransform.position = DirectX::XMFLOAT3(5.0f, 0.0f, 0.0f);
-
-        // Create player cube
-        Mesh playerMesh = MeshFactory::CreateCube(renderer.GetDevice(), 1.0f,
-            DirectX::XMFLOAT4(1.0f, 0.2f, 0.2f, 1.0f)); // Red
-        Transform playerTransform;
-        playerTransform.position = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
+        Entity player = scene.CreateEntity("Player");
+        player.AddComponent<Transform>();
+        player.AddComponent<MeshRenderer>(MeshFactory::CreateCube(renderer.GetDevice(), 1.0f, DirectX::XMFLOAT4(1.0f, 0.2f, 0.2f, 1.0f)));
 
         bool running = true;
         while (running && !Input::ShouldQuit()) {
@@ -74,15 +66,17 @@ int main(int argc, char* argv[])
                     moveZ /= magnitude;
                 }
 
-                playerTransform.position.x += moveX * PLAYER_SPEED;
-                playerTransform.position.z += moveZ * PLAYER_SPEED;
+                auto& t = player.GetComponent<Transform>();
+                t.position.x += moveX * PLAYER_SPEED;
+                t.position.z += moveZ * PLAYER_SPEED;
             }
 
             // Render
             renderer.BeginRender();
-            renderer.RenderMesh(platformMesh, platformTransform, 0);
-            renderer.RenderMesh(randomCubeMesh, randomTransform, 1);
-            renderer.RenderMesh(playerMesh, playerTransform, 2);
+            auto view = scene.m_registry.view<Transform, MeshRenderer>();
+            for (auto [entity, transform, meshRenderer] : view.each()) {
+                renderer.RenderMesh(meshRenderer.mesh, transform);
+            }
             renderer.EndRender();
         }
 
