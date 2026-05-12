@@ -5,6 +5,10 @@ using namespace DirectX;
 
 void Camera::Init(float aspectRatio){
 	m_aspectRatio = aspectRatio;
+    m_transform.position = DirectX::XMFLOAT3(0.0f, 10.0f, -10.0f); // kamera wy¿ej i z ty³u
+    m_targetTransform.position = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f); // patrzy na origin
+
+    Update(); // inicjalizuj macierze od razu
 }
 
 void Camera::Update() {

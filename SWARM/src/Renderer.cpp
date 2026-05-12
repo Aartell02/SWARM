@@ -116,6 +116,8 @@ void Renderer::CreateFence() {
 }
 
 void Renderer::BeginRender() {
+	m_currentObjectIndex = 0; // Reset object index for this frame
+	m_camera.Update(); // Update camera matrices before rendering
     // --- Record commands ---
     CHECK(m_cmdAllocator->Reset());
     CHECK(m_cmdList->Reset(m_cmdAllocator.Get(), m_pipelineState.Get()));
@@ -275,7 +277,7 @@ void Renderer::CreatePipelineStateObject() {
             .FrontCounterClockwise = FALSE
         },
         .DepthStencilState = {
-            .DepthEnable = TRUE,
+            .DepthEnable = FALSE, // to be true
             .DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL,
             .DepthFunc = D3D12_COMPARISON_FUNC_LESS,
             .StencilEnable = FALSE
@@ -292,7 +294,7 @@ void Renderer::CreatePipelineStateObject() {
 }
 
 void Renderer::CreateConstantBuffer() {
-    const UINT bufferSize = (sizeof(ConstantBuffer) + 255) & ~255; // Align to 256 bytes
+    const UINT bufferSize = ((sizeof(ConstantBuffer) + 255) & ~255) * MAX_OBJECTS; // Align to 256 bytes
 
     D3D12_HEAP_PROPERTIES heapProps{};
     heapProps.Type = D3D12_HEAP_TYPE_UPLOAD;
