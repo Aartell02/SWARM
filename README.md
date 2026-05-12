@@ -1,7 +1,6 @@
-Personal project
 # SWARM
 
-A DirectX 12 renderer and game engine prototype written in C++20.
+A DirectX 12 renderer and game engine personal project written in C++20.
 
 ## Features
 
