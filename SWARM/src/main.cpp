@@ -7,6 +7,9 @@
 #include <stdexcept>
 #include <iostream>
 #include <cmath>
+#include <d3dcompiler.h>
+#include "components/Entity.hpp"
+#include "Scene.hpp"
 
 constexpr int WINDOW_WIDTH{ 1280 };
 constexpr int WINDOW_HEIGHT{ 720 };
@@ -32,7 +35,14 @@ int main(int argc, char* argv[])
         constexpr UINT alignedSize = (sizeof(ConstantBuffer) + 255) & ~255;
         constexpr UINT maxObjects = 3;
 
+		// Create scene
+        Scene scene;
+
         // Create platform (large plane)
+        Entity platformEntity = scene.CreateEntity("Platform");
+		platformEntity.AddComponent<Transform>().position = DirectX::XMFLOAT3(0.0f, -2.0f, 0.0f);
+        //platformEntity.AddComponent<Mesh>(MeshFactory::CreateCube());
+
         Mesh platformMesh = MeshFactory::CreatePlane(renderer.GetDevice(), 10.0f, 10.0f, 
             DirectX::XMFLOAT4(0.2f, 0.8f, 0.2f, 1.0f)); // Green
         Transform platformTransform;

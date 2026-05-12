@@ -308,9 +308,7 @@ void Renderer::RenderMesh(const Mesh& mesh, const Transform& transform, UINT obj
 
     // Write into the correct slot
     constexpr UINT alignedSize = (sizeof(ConstantBuffer) + 255) & ~255;
-    auto* slot = reinterpret_cast<ConstantBuffer*>(
-        reinterpret_cast<uint8_t*>(m_pConstantBufferData) + objectIndex * alignedSize
-        );
+    auto* slot = reinterpret_cast<ConstantBuffer*>(reinterpret_cast<uint8_t*>(m_pConstantBufferData) + objectIndex * alignedSize);
     slot->worldViewProj = worldViewProj;
 
     // Offset the GPU address to match
