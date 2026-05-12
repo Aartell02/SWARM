@@ -31,7 +31,7 @@ public:
 	ID3D12Device* GetDevice() { return m_device.Get(); }
 
 	//Camera
-	void SetCameraTarget(Transform* target);
+	void SetCamera(Camera* camera);
 
 private:
 	void CreateDevice();
@@ -67,5 +67,5 @@ private:
 	uint32_t m_viewportHeight = 0;
 	uint32_t m_currentObjectIndex = 0; // For constant buffer indexing
 
-	Camera m_camera;
+	Camera* m_camera;
 };

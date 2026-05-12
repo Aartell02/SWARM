@@ -47,8 +47,11 @@ int main(int argc, char* argv[])
         Entity player = scene.CreateEntity("Player");
         player.AddComponent<Transform>();
         player.AddComponent<MeshRenderer>(MeshFactory::CreateCube(renderer.GetDevice(), 1.0f, DirectX::XMFLOAT4(1.0f, 0.2f, 0.2f, 1.0f)));
+		Camera camera;
 
-		renderer.SetCameraTarget(&player.GetComponent<Transform>());
+        camera.Init(static_cast<float>(WINDOW_WIDTH) / static_cast<float>(WINDOW_HEIGHT));
+		camera.SetTarget(&player.GetComponent<Transform>());
+		renderer.SetCamera(&camera);
 
         bool running = true;
         while (running && !Input::ShouldQuit()) {

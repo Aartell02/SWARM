@@ -20,9 +20,6 @@ void Renderer::Init(void* hwnd, uint32_t width, uint32_t height) {
     CreateFence();
     CreatePipelineStateObject();
     CreateConstantBuffer();
-
-    m_camera.Init(static_cast<float>(width) / static_cast<float>(height));
-
 }
 
 void Renderer::CreateDevice() {
@@ -117,7 +114,7 @@ void Renderer::CreateFence() {
 
 void Renderer::BeginRender() {
 	m_currentObjectIndex = 0; // Reset object index for this frame
-	m_camera.Update(); // Update camera matrices before rendering
+	m_camera->Update(); // Update camera matrices before rendering
     // --- Record commands ---
     CHECK(m_cmdAllocator->Reset());
     CHECK(m_cmdList->Reset(m_cmdAllocator.Get(), m_pipelineState.Get()));
@@ -323,7 +320,7 @@ void Renderer::RenderMesh(const Mesh& mesh, const Transform& transform) {
     // Update constant buffer
 
     XMMATRIX world = transform.GetWorldMatrix();
-    XMMATRIX worldViewProj = XMMatrixTranspose(world * m_camera.m_viewMatrix * m_camera.m_projMatrix);
+    XMMATRIX worldViewProj = XMMatrixTranspose(world * m_camera->m_viewMatrix * m_camera->m_projMatrix);
 
     // Write into the correct slot
     constexpr UINT alignedSize = (sizeof(ConstantBuffer) + 255) & ~255;
@@ -357,6 +354,6 @@ void Renderer::Shutdown() {
     if (m_fenceEvent) CloseHandle(m_fenceEvent);
 }
 
-void Renderer::SetCameraTarget(Transform* target) {
-    m_camera.SetTarget(target);
+void Renderer::SetCamera(Camera* camera) {
+    m_camera = camera;
 }
