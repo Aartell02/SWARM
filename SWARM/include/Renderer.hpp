@@ -58,6 +58,7 @@ private:
 	ComPtr<ID3D12Fence>					m_fence;
 	ComPtr<ID3D12PipelineState>			m_pipelineState;
 	ComPtr<ID3D12RootSignature>			m_rootSignature;
+	ComPtr<ID3D12Resource>				m_depthStencil;
 	ComPtr<ID3D12Resource>				m_constantBuffer;
 	ConstantBuffer*						m_pConstantBufferData = nullptr;
 

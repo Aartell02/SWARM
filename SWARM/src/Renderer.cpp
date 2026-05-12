@@ -83,29 +83,6 @@ void Renderer::CreateRTVHeap() {
     };
     CHECK(m_device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&m_rtvHeap)));
     m_rtvDescSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-
-    D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc{
-		.Format = DXGI_FORMAT_D32_FLOAT,
-		.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D,
-		.Flags = D3D12_DSV_FLAG_NONE
-    };
-
-	D3D12_CLEAR_VALUE depthOptimizedClearValue{
-        .Format = DXGI_FORMAT_D32_FLOAT,
-        .DepthStencil = {
-            .Depth = 1.0f,
-            .Stencil = 0
-        }
-    };
-
-    CHECK(m_device->CreateCommittedResource(
-        &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-        D3D12_HEAP_FLAG_NONE,
-        &CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_D32_FLOAT, m_viewportWidth, m_viewportHeight, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL),
-        D3D12_RESOURCE_STATE_DEPTH_WRITE,
-        &depthOptimizedClearValue,
-        IID_PPV_ARGS(&m_depthStencil)));
-	m_device->CreateDepthStencilView(m_depthStencil.Get(), &dsvDesc, m_dsvHeap->GetCPUDescriptorHandleForHeapStart());
 }
 
 void Renderer::CreateDSVHeap() {
@@ -114,6 +91,43 @@ void Renderer::CreateDSVHeap() {
         .NumDescriptors = 1,
     };
     CHECK(m_device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&m_dsvHeap)));
+
+    D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc{
+       .Format = DXGI_FORMAT_D32_FLOAT,
+       .ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D,
+       .Flags = D3D12_DSV_FLAG_NONE
+    };
+
+    D3D12_CLEAR_VALUE depthOptimizedClearValue{
+        .Format = DXGI_FORMAT_D32_FLOAT,
+        .DepthStencil = {
+            .Depth = 1.0f,
+            .Stencil = 0
+        }
+    };
+
+    D3D12_HEAP_PROPERTIES heapProps{};
+    heapProps.Type = D3D12_HEAP_TYPE_DEFAULT;
+
+    D3D12_RESOURCE_DESC depthDesc{};
+    depthDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+    depthDesc.Width = m_viewportWidth;
+    depthDesc.Height = m_viewportHeight;
+    depthDesc.DepthOrArraySize = 1;
+    depthDesc.MipLevels = 1;
+    depthDesc.Format = DXGI_FORMAT_D32_FLOAT;
+    depthDesc.SampleDesc = { 1, 0 };
+    depthDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+
+    CHECK(m_device->CreateCommittedResource(
+        &heapProps,
+        D3D12_HEAP_FLAG_NONE,
+        &depthDesc,
+        D3D12_RESOURCE_STATE_DEPTH_WRITE,
+        &depthOptimizedClearValue,
+        IID_PPV_ARGS(&m_depthStencil)));
+
+    m_device->CreateDepthStencilView(m_depthStencil.Get(), &dsvDesc, m_dsvHeap->GetCPUDescriptorHandleForHeapStart());
 }
 
 void Renderer::CreateFrameResources() {
