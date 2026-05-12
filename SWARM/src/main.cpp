@@ -13,9 +13,9 @@ constexpr int WINDOW_HEIGHT{ 720 };
 constexpr float PLAYER_SPEED{ 0.1f };
 
 int main(int argc, char* argv[]) 
+
 {
     SDL_Init(SDL_INIT_VIDEO);
-
     SDL_Window* window = SDL_CreateWindow(
         "SWARM - Platform & Player", WINDOW_WIDTH, WINDOW_HEIGHT,
         SDL_WINDOW_RESIZABLE

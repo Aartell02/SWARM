@@ -6,6 +6,7 @@
 #include <DirectXMath.h>
 #include "Mesh.hpp"
 #include "Transform.hpp"
+#include "Camera.hpp"
 
 using Microsoft::WRL::ComPtr; // Smart pointer that calls Release() automatically
 using namespace DirectX;
@@ -60,7 +61,5 @@ private:
 	uint32_t m_viewportWidth = 0;
 	uint32_t m_viewportHeight = 0;
 
-	// Camera
-	XMMATRIX m_viewMatrix;
-	XMMATRIX m_projMatrix;
+	Camera m_camera;
 };

@@ -21,14 +21,8 @@ void Renderer::Init(void* hwnd, uint32_t width, uint32_t height) {
     CreatePipelineStateObject();
     CreateConstantBuffer();
 
-    // Setup camera
-    XMVECTOR eyePosition = XMVectorSet(0.0f, 10.0f, -10.0f, 1.0f);
-    XMVECTOR focusPosition = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
-    XMVECTOR upDirection = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-    m_viewMatrix = XMMatrixLookAtLH(eyePosition, focusPosition, upDirection);
+    m_camera.Init(static_cast<float>(width) / static_cast<float>(height));
 
-    float aspectRatio = static_cast<float>(width) / static_cast<float>(height);
-    m_projMatrix = XMMatrixPerspectiveFovLH(XM_PIDIV4, aspectRatio, 0.1f, 100.0f);
 }
 
 void Renderer::CreateDevice() {
@@ -222,7 +216,7 @@ void Renderer::CreatePipelineStateObject() {
         throw std::runtime_error("Vertex shader compilation failed or file not found");
     }
 
-    hr = D3DCompileFromFile(L"shaders/FragmentShader.hlsl", nullptr, nullptr, "main", "ps_5_0", 0, 0, &psBlob, &errorBlob);
+    hr = D3DCompileFromFile(L"shaders/IndexShader.hlsl", nullptr, nullptr, "main", "ps_5_0", 0, 0, &psBlob, &errorBlob);
     if (FAILED(hr)) {
         if (errorBlob) {
             std::string errorMsg(static_cast<char*>(errorBlob->GetBufferPointer()), errorBlob->GetBufferSize());
@@ -308,8 +302,9 @@ void Renderer::CreateConstantBuffer() {
 
 void Renderer::RenderMesh(const Mesh& mesh, const Transform& transform, UINT objectIndex) {
     // Update constant buffer
+
     XMMATRIX world = transform.GetWorldMatrix();
-    XMMATRIX worldViewProj = XMMatrixTranspose(world * m_viewMatrix * m_projMatrix);
+    XMMATRIX worldViewProj = XMMatrixTranspose(world * m_camera.m_viewMatrix * m_camera.m_projMatrix);
 
     // Write into the correct slot
     constexpr UINT alignedSize = (sizeof(ConstantBuffer) + 255) & ~255;

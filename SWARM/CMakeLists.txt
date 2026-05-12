@@ -21,10 +21,11 @@ add_executable (${CMAKE_PROJECT_NAME}
     "src/Renderer.cpp"
     "src/Mesh.cpp"
     "src/Input.cpp"
-)
+    "src/Camera.cpp")
  
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE 
     ${CMAKE_CURRENT_SOURCE_DIR}/include/
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/components/
 )
 
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
