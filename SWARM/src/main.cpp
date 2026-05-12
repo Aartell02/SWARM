@@ -41,11 +41,11 @@ int main(int argc, char* argv[])
         platform.AddComponent<MeshRenderer>(MeshFactory::CreatePlane(renderer.GetDevice(), 10.0f, 10.0f, DirectX::XMFLOAT4(0.2f, 0.8f, 0.2f, 1.0f)));
 
         Entity randomCube = scene.CreateEntity("RandomCube");
-        randomCube.AddComponent<Transform>().position = DirectX::XMFLOAT3(5.0f, 0.0f, 0.0f);
+        randomCube.AddComponent<Transform>().position = DirectX::XMFLOAT3(5.0f, 0.0f, 5.0f);
         randomCube.AddComponent<MeshRenderer>(MeshFactory::CreateCube(renderer.GetDevice(), 1.0f, DirectX::XMFLOAT4(0.2f, 0.2f, 0.8f, 1.0f)));
 
         Entity player = scene.CreateEntity("Player");
-        player.AddComponent<Transform>();
+        player.AddComponent<Transform>().position = DirectX::XMFLOAT3(0.0f, 2.0f, 5.0f);
         player.AddComponent<MeshRenderer>(MeshFactory::CreateCube(renderer.GetDevice(), 1.0f, DirectX::XMFLOAT4(1.0f, 0.2f, 0.2f, 1.0f)));
 		Camera camera;
 

@@ -15,6 +15,7 @@ void Renderer::Init(void* hwnd, uint32_t width, uint32_t height) {
     CreateCommandQueue();
     CreateSwapChain(hwnd, width, height);
     CreateRTVHeap();
+	CreateDSVHeap();
     CreateFrameResources();
     CreateCommandAllocatorAndList();
     CreateFence();
@@ -82,6 +83,37 @@ void Renderer::CreateRTVHeap() {
     };
     CHECK(m_device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&m_rtvHeap)));
     m_rtvDescSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+
+    D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc{
+		.Format = DXGI_FORMAT_D32_FLOAT,
+		.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D,
+		.Flags = D3D12_DSV_FLAG_NONE
+    };
+
+	D3D12_CLEAR_VALUE depthOptimizedClearValue{
+        .Format = DXGI_FORMAT_D32_FLOAT,
+        .DepthStencil = {
+            .Depth = 1.0f,
+            .Stencil = 0
+        }
+    };
+
+    CHECK(m_device->CreateCommittedResource(
+        &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+        D3D12_HEAP_FLAG_NONE,
+        &CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_D32_FLOAT, m_viewportWidth, m_viewportHeight, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL),
+        D3D12_RESOURCE_STATE_DEPTH_WRITE,
+        &depthOptimizedClearValue,
+        IID_PPV_ARGS(&m_depthStencil)));
+	m_device->CreateDepthStencilView(m_depthStencil.Get(), &dsvDesc, m_dsvHeap->GetCPUDescriptorHandleForHeapStart());
+}
+
+void Renderer::CreateDSVHeap() {
+    D3D12_DESCRIPTOR_HEAP_DESC desc{
+        .Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV,
+        .NumDescriptors = 1,
+    };
+    CHECK(m_device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&m_dsvHeap)));
 }
 
 void Renderer::CreateFrameResources() {
@@ -274,7 +306,7 @@ void Renderer::CreatePipelineStateObject() {
             .FrontCounterClockwise = FALSE
         },
         .DepthStencilState = {
-            .DepthEnable = FALSE, // to be true
+            .DepthEnable = TRUE,
             .DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL,
             .DepthFunc = D3D12_COMPARISON_FUNC_LESS,
             .StencilEnable = FALSE
@@ -283,7 +315,7 @@ void Renderer::CreatePipelineStateObject() {
         .PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
         .NumRenderTargets = 1,
         .RTVFormats = { DXGI_FORMAT_R8G8B8A8_UNORM },
-        .DSVFormat = DXGI_FORMAT_UNKNOWN,
+        .DSVFormat = DXGI_FORMAT_D32_FLOAT,
 		.SampleDesc = { 1, 0 }
     };
 

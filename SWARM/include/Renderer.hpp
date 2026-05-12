@@ -38,6 +38,7 @@ private:
 	void CreateCommandQueue();
 	void CreateSwapChain(void* hwnd, uint32_t width, uint32_t height);
 	void CreateRTVHeap();
+	void CreateDSVHeap();
 	void CreateFrameResources();
 	void CreateCommandAllocatorAndList();
 	void CreateFence();
@@ -50,6 +51,7 @@ private:
 	ComPtr<ID3D12CommandQueue>			m_cmdQueue;
 	ComPtr<IDXGISwapChain3>				m_swapChain;
 	ComPtr<ID3D12DescriptorHeap>		m_rtvHeap;
+	ComPtr<ID3D12DescriptorHeap>		m_dsvHeap;
 	ComPtr<ID3D12Resource>				m_renderTargets[FRAME_COUNT];
 	ComPtr<ID3D12CommandAllocator>		m_cmdAllocator;
 	ComPtr<ID3D12GraphicsCommandList>	m_cmdList;
