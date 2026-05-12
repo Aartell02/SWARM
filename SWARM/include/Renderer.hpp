@@ -30,6 +30,9 @@ public:
 	// Direct access to device for mesh creation
 	ID3D12Device* GetDevice() { return m_device.Get(); }
 
+	//Camera
+	void SetCameraTarget(Transform* target);
+
 private:
 	void CreateDevice();
 	void CreateCommandQueue();

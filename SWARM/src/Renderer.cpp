@@ -345,6 +345,7 @@ void Renderer::RenderMesh(const Mesh& mesh, const Transform& transform) {
 
     // Draw
     m_cmdList->DrawIndexedInstanced(mesh.GetIndexCount(), 1, 0, 0, 0);
+	m_currentObjectIndex++;
 }
 
 void Renderer::Shutdown() {
@@ -354,4 +355,8 @@ void Renderer::Shutdown() {
         m_pConstantBufferData = nullptr;
     }
     if (m_fenceEvent) CloseHandle(m_fenceEvent);
+}
+
+void Renderer::SetCameraTarget(Transform* target) {
+    m_camera.SetTarget(target);
 }

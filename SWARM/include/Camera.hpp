@@ -11,11 +11,12 @@ class Camera {
 public:
 	void Init(float aspectRatio);
 	void Update();
+	void SetTarget(Transform* target);
 
 	DirectX::XMMATRIX m_viewMatrix;
 	DirectX::XMMATRIX m_projMatrix;
 private:
 	float m_aspectRatio;
 	Transform m_transform;
-	Transform m_targetTransform;
+	Transform* m_targetTransform;
 };

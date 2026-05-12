@@ -15,20 +15,16 @@ constexpr int WINDOW_WIDTH{ 1280 };
 constexpr int WINDOW_HEIGHT{ 720 };
 constexpr float PLAYER_SPEED{ 0.1f };
 
-int main(int argc, char* argv[]) 
-
+int main(int argc, char* argv[])
 {
     SDL_Init(SDL_INIT_VIDEO);
-    SDL_Window* window = SDL_CreateWindow(
-        "SWARM - Platform & Player", WINDOW_WIDTH, WINDOW_HEIGHT,
-        SDL_WINDOW_RESIZABLE
-    );
+    SDL_Window* window = SDL_CreateWindow("SWARM - Platform & Player", WINDOW_WIDTH, WINDOW_HEIGHT,SDL_WINDOW_RESIZABLE);
 
     SDL_PropertiesID props = SDL_GetWindowProperties(window);
-    HWND hwnd = (HWND)SDL_GetPointerProperty(
-        props, SDL_PROP_WINDOW_WIN32_HWND_POINTER, nullptr);
+    HWND hwnd = (HWND)SDL_GetPointerProperty(props, SDL_PROP_WINDOW_WIN32_HWND_POINTER, nullptr);
 
-    try {
+    try 
+    {
         Renderer renderer;
         renderer.Init(hwnd, WINDOW_WIDTH, WINDOW_HEIGHT);
 
@@ -39,6 +35,7 @@ int main(int argc, char* argv[])
         Scene scene;
 
         // Create platform (large plane)
+
         Entity platform = scene.CreateEntity("Platform");
         platform.AddComponent<Transform>().position = DirectX::XMFLOAT3(0.0f, -2.0f, 0.0f);
         platform.AddComponent<MeshRenderer>(MeshFactory::CreatePlane(renderer.GetDevice(), 10.0f, 10.0f, DirectX::XMFLOAT4(0.2f, 0.8f, 0.2f, 1.0f)));
@@ -50,6 +47,8 @@ int main(int argc, char* argv[])
         Entity player = scene.CreateEntity("Player");
         player.AddComponent<Transform>();
         player.AddComponent<MeshRenderer>(MeshFactory::CreateCube(renderer.GetDevice(), 1.0f, DirectX::XMFLOAT4(1.0f, 0.2f, 0.2f, 1.0f)));
+
+		renderer.SetCameraTarget(&player.GetComponent<Transform>());
 
         bool running = true;
         while (running && !Input::ShouldQuit()) {
@@ -82,7 +81,8 @@ int main(int argc, char* argv[])
 
         renderer.Shutdown();
     }
-    catch (const std::exception& e) {
+    catch (const std::exception& e) 
+    {
         std::cerr << "Error: " << e.what() << std::endl;
     }
 
