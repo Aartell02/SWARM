@@ -2,7 +2,7 @@
 #include <SDL3/SDL_main.h>
 #include "Renderer.hpp"
 #include "Mesh.hpp"
-#include "Transform.hpp"
+#include "components/Transform.hpp"
 #include "Input.hpp"
 #include <stdexcept>
 #include <iostream>

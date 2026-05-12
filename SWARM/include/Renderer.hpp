@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <DirectXMath.h>
 #include "Mesh.hpp"
-#include "Transform.hpp"
+#include "components/Transform.hpp"
 #include "Camera.hpp"
 
 using Microsoft::WRL::ComPtr; // Smart pointer that calls Release() automatically

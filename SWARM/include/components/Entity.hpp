@@ -1,4 +1,5 @@
 #pragma once
+#include <entt/entt.hpp>
 
 struct Entity {
 	entt::entity handle = entt::null;
